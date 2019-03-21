@@ -1,0 +1,7 @@
+/dhparam.pem
+/acme.sh/
+/conf.d/
+/bot-blocker/
+/html/
+/docker-compose*
+/.env*

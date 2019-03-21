@@ -1,0 +1,55 @@
+version: '2.2'
+
+services:
+  nginx:
+    image: webvariants/nginx-acme-and-more
+    build: .
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./dhparam.pem:/etc/nginx/dhparam/dhparam.pem:ro
+      - ./acme.sh/:/etc/ssl/acme.sh/:ro
+      - ./conf.d:/etc/nginx/conf.d:ro
+      - ./bot-blocker/:/etc/bot-blocker/
+      - ./html/:/usr/share/nginx/html/
+      - ./log/:/var/log/nginx
+      # - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # - ./include:/etc/nginx/include:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 512m
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    logging:
+      driver: json-file
+      options:
+        max-file: '3'
+        max-size: 512k
+
+  cron-acme:
+    image: webvariants/nginx-acme-and-more
+    build: .
+    restart: always
+    command: cron-acme
+    volumes:
+      - ./acme.sh/:/etc/ssl/acme.sh/:ro
+      - ./html/:/usr/share/nginx/html/
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - ACME_CRON=${ACME_CRON-27 10 * * 1-4}
+      - ACME_SIGNAL_CONTAINER=${ACME_SIGNAL_CONTAINER-proxy_nginx_1}
+    user: nginx:${DOCKER_GID-999}
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 128m
+    logging:
+      driver: json-file
+      options:
+        max-file: '3'
+        max-size: 512k

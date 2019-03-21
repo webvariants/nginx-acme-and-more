@@ -1,0 +1,11 @@
+#!/bin/bash -e
+
+cd "$(dirname "${BASH_SOURCE[0]}")"
+./docker-compose kill -s $(if [ -z "$1" ]; then echo "HUP"; else echo "$1"; fi) nginx
+
+./docker-compose logs --tail=10 nginx
+tail ./log/error.log
+
+# https://www.nginx.com/resources/wiki/start/topics/tutorials/commandline/
+# HUP - Configuration reload
+# USR1 - Reopen the log files

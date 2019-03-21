@@ -1,0 +1,17 @@
+#!/bin/bash
+
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
+if [ ! -e "dhparam.pem" ]; then
+    ./generate-dhparam
+fi
+
+install -o 101 -g 101 -d ./bot-blocker
+install -o 101 -g 101 -d ./acme.sh
+install -o 101 -g 101 -d ./conf.d
+install -o 101 -g 101 -d ./log
+install -o 101 -g 101 -d ./html
+
+if [ ! -e ".env" ]; then
+    echo DOCKER_GID=$(stat -c '%g' /var/run/docker.sock) > .env
+fi

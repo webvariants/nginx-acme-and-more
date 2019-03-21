@@ -1,0 +1,13 @@
+#!/bin/bash -e
+
+DIR=/etc/bot-blocker
+
+if [ ! -e "$DIR/.git" ]; then
+  cd /etc
+  git clone https://github.com/mitchellkrogza/nginx-ultimate-bad-bot-blocker "$DIR"
+fi
+
+cd "$DIR"
+
+git fetch -p
+git checkout "$(git tag -l | grep -e ^V3\. | sort -n | tail -n 1)"

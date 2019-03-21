@@ -1,0 +1,4 @@
+#!/bin/bash
+
+cd "$(dirname $(realpath "${BASH_SOURCE[0]}"))"
+./docker-compose exec nginx $@
