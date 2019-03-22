@@ -86,7 +86,7 @@ RUN cd /etc/nginx && \
 
 COPY --from=signal-upx /docker-signal /usr/local/bin/docker-signal
 
-COPY /docker/cron-acme /docker/update-bot-blocker /usr/local/bin/
+COPY /docker/cron-acme /docker/cron-bot-blocker /docker/update-bot-blocker /usr/local/bin/
 
 COPY ./include/ /etc/nginx/include/
 

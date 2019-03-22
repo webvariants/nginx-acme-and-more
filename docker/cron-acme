@@ -2,5 +2,5 @@
 
 set -f
 
-echo "cron-acme $ACME_CRON singal container $ACME_SIGNAL_CONTAINER"
-echo $ACME_CRON' acme.sh --cron --renew-hook "docker-signal -name /'$ACME_SIGNAL_CONTAINER' -signal 1"' | minicron -e
+echo "cron-acme $ACME_CRON singal container $SIGNAL_CONTAINER"
+echo $ACME_CRON' acme.sh --cron --renew-hook "docker-signal -name /'$SIGNAL_CONTAINER' -signal 1"' | minicron -e

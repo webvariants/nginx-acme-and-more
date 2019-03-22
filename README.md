@@ -24,6 +24,10 @@
     # start with minimal config
     ./docker-compose up -d
 
+    # get nginx container name and add to .env
+    echo SIGNAL_CONTAINER=$(./docker-compose ps nginx | tail -n 1 | cut -d' '  -f1) >> .env
+    ./docker-compose up -d
+
     # get certificate for "live app" (change to your domain)
     ./docker-compose exec nginx acme.sh --issue -d example.com -w /usr/share/nginx/html
 
@@ -38,7 +42,7 @@
     # look for an example app in example-app/docker-compose.yml
 
     # reload nginx config through HUP signal
-    ./docker-compose kill -s $(if [ -z "$1" ]; then echo "HUP"; else echo "$1"; fi) nginx
+    ./docker-compose kill -s HUP nginx
 
     # open live app (change to your domain)
     curl http://example.com

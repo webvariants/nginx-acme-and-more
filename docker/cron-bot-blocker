@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -f
+
+echo "cron-update-bot-blocker $BOT_BLOCKER_CRON singal container $SIGNAL_CONTAINER"
+echo $BOT_BLOCKER_CRON' update-bot-blocker && docker-signal -name /'$SIGNAL_CONTAINER' -signal 1' | minicron -e
