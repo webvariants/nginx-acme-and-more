@@ -4,12 +4,6 @@ COPY signal/main.go /app/main.go
 
 RUN cd /app && go get -d ./... && CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-s -w -extldflags "-static"' .
 
-FROM gruebel/upx:latest as signal-upx
-
-COPY --from=signal /app/app /docker-signal
-
-RUN upx --best --lzma docker-signal
-
 FROM alpine:3.9 AS build
 
 ARG NGINX_VERSION="1.15.9"
@@ -84,7 +78,7 @@ RUN cd /etc/nginx && \
     touch /etc/nginx/bots.d/blockbots.conf && \
     touch /etc/nginx/bots.d/ddos.conf
 
-COPY --from=signal-upx /docker-signal /usr/local/bin/docker-signal
+COPY --from=signal /app/app /usr/local/bin/docker-signal
 
 COPY /docker/cron-acme /docker/cron-bot-blocker /docker/update-bot-blocker /usr/local/bin/
 
