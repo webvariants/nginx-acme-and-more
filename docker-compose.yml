@@ -10,7 +10,7 @@ services:
       - "443:443"
     volumes:
       - ./dhparam.pem:/etc/nginx/dhparam/dhparam.pem:ro
-      - ./acme.sh/:/etc/ssl/acme.sh/:ro
+      - ./acme.sh/:/etc/ssl/acme.sh/
       - ./conf.d:/etc/nginx/conf.d:ro
       - ./bot-blocker/:/etc/bot-blocker/
       - ./html/:/usr/share/nginx/html/
@@ -37,7 +37,7 @@ services:
     restart: always
     command: cron-acme
     volumes:
-      - ./acme.sh/:/etc/ssl/acme.sh/:ro
+      - ./acme.sh/:/etc/ssl/acme.sh/
       - ./html/:/usr/share/nginx/html/
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:

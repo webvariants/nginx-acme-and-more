@@ -1,0 +1,15 @@
+version: '2.2'
+
+networks:
+  proxy:
+    external:
+      name: proxy_default
+
+services:
+  whoami:
+    # RUNS ON PORT 8000! change "live:80" to "whoami:8000"
+    image: jwilder/whoami
+    restart: always
+    networks:
+      - default
+      - proxy
