@@ -7,7 +7,7 @@ RUN cd /app && go get -d ./... && CGO_ENABLED=0 GOOS=linux go build -a -ldflags 
 FROM alpine:3.9 AS build
 
 ARG NGINX_VERSION="1.15.9"
-ARG NGINX_CHECKSUM="e4cfba989bba614cd53f3f406ac6da9f05977d6b1296e5d20a299f10c2d7ae43"
+ARG GPG_KEYS="B0F4253373F8F6F510D42178520A9993A1C052F8"
 
 ARG NGINX_CONFIG="\
     --sbin-path=/nginx \
@@ -39,6 +39,7 @@ RUN apk add --update --no-cache \
       git \
     && \
     apk add --update --no-cache --virtual .build-deps \
+      gnupg1 \
       build-base \
       openssl-dev \
       pcre-dev \
@@ -48,10 +49,25 @@ RUN apk add --update --no-cache \
       libcap \
       curl \
     && \
-    curl -L https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz -o /tmp/nginx.tar.gz && \
-    if [ "$NGINX_CHECKSUM" != "$(sha256sum /tmp/nginx.tar.gz | awk '{print $1}')" ]; then exit 1; fi && \
-    cd /tmp && tar xzf /tmp/nginx.tar.gz && rm /tmp/nginx.tar.gz && \
+    cd /tmp && \
+    curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz -o nginx.tar.gz && \
+    curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz.asc -o nginx.tar.gz.asc && \
+    export GNUPGHOME="$(mktemp -d)" && \
+    found=''; \
+    for server in \
+      ha.pool.sks-keyservers.net \
+      hkp://keyserver.ubuntu.com:80 \
+      hkp://p80.pool.sks-keyservers.net:80 \
+      pgp.mit.edu \
+    ; do \
+      echo "Fetching GPG key $GPG_KEYS from $server"; \
+      gpg --keyserver "$server" --keyserver-options timeout=10 --recv-keys "$GPG_KEYS" && found=yes && break; \
+    done; \
+    test -z "$found" && echo >&2 "error: failed to fetch GPG key $GPG_KEYS" && exit 1; \
+    gpg --batch --verify nginx.tar.gz.asc nginx.tar.gz && \
+    tar xzf nginx.tar.gz && \
     mv /tmp/nginx-$NGINX_VERSION /tmp/nginx && \
+    rm -rf "$GNUPGHOME" nginx.tar.gz.asc nginx.tar.gz && \
     cd /tmp/nginx && \
     ./configure $NGINX_CONFIG && \
     make && \
@@ -61,17 +77,14 @@ RUN apk add --update --no-cache \
     apk del .build-deps && \
     mkdir -p /var/log/nginx && cd /var/log/nginx && ln -s /dev/stderr error.log && ln -s /dev/stdout access.log
 
-COPY /docker/mime.types /etc/nginx/mime.types
-COPY /docker/passwd /docker/group /etc/
-COPY /nginx.conf /etc/nginx/nginx.conf
-
 ENV LE_WORKING_DIR=/usr/local/bin \
     LE_CONFIG_HOME=/etc/ssl/acme.sh
 RUN curl https://get.acme.sh | sh && rm -rf "$LE_WORKING_DIR/deploy" "$LE_CONFIG_HOME/account.conf" "/etc/crontabs/cron.update" && find /tmp/ -type f -delete && acme.sh --uninstallcronjob
 
 RUN curl https://raw.githubusercontent.com/mcnilz/minicron/master/minicron > /usr/local/bin/minicron && chmod +x /usr/local/bin/minicron
 
-RUN cd /etc/nginx && \
+RUN mkdir -p /etc/nginx && \
+    cd /etc/nginx && \
     mkdir -p /etc/bot-blocker/bots.d /etc/bot-blocker/conf.d && \
     ln -s /etc/bot-blocker/bots.d . && \
     ln -s /etc/bot-blocker/conf.d bots-conf.d && \
@@ -80,9 +93,12 @@ RUN cd /etc/nginx && \
 
 COPY --from=signal /app/app /usr/local/bin/docker-signal
 
+COPY /docker/passwd /docker/group /etc/
+COPY /docker/mime.types /etc/nginx/mime.types
+COPY /nginx.conf /etc/nginx/
+COPY /include/ /etc/nginx/include/
+COPY /docker/default.conf /etc/nginx/conf.d/
 COPY /docker/cron-acme /docker/cron-bot-blocker /docker/update-bot-blocker /usr/local/bin/
-
-COPY ./include/ /etc/nginx/include/
 
 USER nginx
 
