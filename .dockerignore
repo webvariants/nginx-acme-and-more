@@ -2,6 +2,7 @@
 /acme.sh/
 /conf.d/
 /bot-blocker/
+/htpasswd/
 /html/
 /docker-compose*
 /.env*

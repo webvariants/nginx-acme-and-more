@@ -35,6 +35,8 @@ services:
     image: webvariants/nginx-acme-and-more
     build: .
     restart: always
+    depends_on:
+      - nginx
     command: cron-acme
     volumes:
       - ./acme.sh/:/etc/ssl/acme.sh/
@@ -75,3 +77,16 @@ services:
       options:
         max-file: '3'
         max-size: 512k
+
+  # goaccess:
+  #   image: allinurl/goaccess
+  #   depends_on:
+  #     - nginx
+  #   volumes:
+  #     - ./log:/srv/logs
+  #     - ./goaccess/data:/srv/data
+  #     - ./goaccess/html:/srv/report
+  #   command:
+  #     - '/bin/sh'
+  #     - '-c'
+  #     - 'goaccess --no-global-config --config-file=/srv/data/goaccess.conf --ws-url=wss://${GOACCESS_DOMAIN}:443/ws $$(find /srv/logs/ -type f -name access.log-* | sort | tail -n 1) /srv/logs/access.log'
