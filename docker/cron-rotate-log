@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -f
+
+echo "cron-rotate-log 59 23 * * * singal container $SIGNAL_CONTAINER"
+echo '59 23 * * * rotate-log && docker-signal -name /'$SIGNAL_CONTAINER' -signal 10' | minicron -e

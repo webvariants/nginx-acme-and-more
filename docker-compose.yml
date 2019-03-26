@@ -78,6 +78,27 @@ services:
         max-file: '3'
         max-size: 512k
 
+  cron-rotate-log:
+    image: webvariants/nginx-acme-and-more
+    build: .
+    restart: always
+    depends_on:
+      - nginx
+    command: cron-rotate-log
+    volumes:
+      - ./log/:/var/log/nginx
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - SIGNAL_CONTAINER=${SIGNAL_CONTAINER-proxy_nginx_1}
+    user: nginx:${DOCKER_GID-999}
+    read_only: true
+    mem_limit: 128m
+    logging:
+      driver: json-file
+      options:
+        max-file: '3'
+        max-size: 512k
+
   # goaccess:
   #   image: allinurl/goaccess
   #   depends_on:

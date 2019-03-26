@@ -1,0 +1,20 @@
+#!/bin/bash -e
+
+cd "/var/log/nginx"
+
+DATE=$(date -I)
+AGO=$(date -I -d "32 days ago")
+
+if [[ ! $(date +"%H%M") =~ 2355|2356|2357|2358|2359 ]] && [ "$1" != "force" ]; then
+   echo Time must be short before midnight >&2
+   exit -1
+fi
+
+for NAME in *.log; do
+  if [ -e "$NAME" ] && [ ! -e "$NAME-$DATE" ]; then
+    mv "$NAME" "$NAME-$DATE"
+  fi
+  if [ -e "$NAME-$AGO" ]; then
+    rm "$NAME-$AGO"
+  fi
+done
