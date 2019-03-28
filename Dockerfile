@@ -27,7 +27,7 @@ RUN rm -rf /etc/apk /etc/shadow /etc/shells /etc/ssl /lib /usr/lib
 
 FROM alpine:3.9
 
-ARG NGINX_VERSION="1.15.9"
+ARG NGINX_VERSION="1.15.10"
 ARG GPG_KEYS="B0F4253373F8F6F510D42178520A9993A1C052F8"
 
 ARG NGINX_CONFIG="\
