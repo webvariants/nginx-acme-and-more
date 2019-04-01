@@ -6,24 +6,22 @@ RUN cd /app && go get -d ./... && CGO_ENABLED=0 GOOS=linux go build -a -ldflags 
 
 FROM alpine:3.9 AS files
 
-RUN mkdir -p /etc/nginx && \
-    cd /etc/nginx && \
-    mkdir -p /etc/bot-blocker/bots.d /etc/bot-blocker/conf.d && \
-    ln -s /etc/bot-blocker/bots.d . && \
-    ln -s /etc/bot-blocker/conf.d bots-conf.d && \
-    touch /etc/nginx/bots.d/blockbots.conf && \
-    touch /etc/nginx/bots.d/ddos.conf
+RUN mkdir -p /rootfs/etc/nginx && \
+    cd /rootfs/etc/nginx && \
+    mkdir -p /rootfs/etc/bot-blocker/bots.d /rootfs/etc/bot-blocker/conf.d && \
+    ln -s ../bot-blocker/bots.d . && \
+    ln -s ../bot-blocker/conf.d bots-conf.d && \
+    touch /rootfs/etc/nginx/bots.d/blockbots.conf && \
+    touch /rootfs/etc/nginx/bots.d/ddos.conf
 
-COPY --from=signal /app/app /usr/local/bin/docker-signal
+COPY --from=signal /app/app /rootfs/usr/local/bin/docker-signal
 
-COPY /docker/passwd /docker/group /etc/
-COPY /docker/mime.types /etc/nginx/mime.types
-COPY /nginx.conf /etc/nginx/
-COPY /include/ /etc/nginx/include/
-COPY /docker/default.conf /etc/nginx/conf.d/
-COPY /docker/cron-acme /docker/cron-bot-blocker /docker/update-bot-blocker /docker/cron-rotate-log /docker/rotate-log /usr/local/bin/
-
-RUN rm -rf /etc/apk /etc/shadow /etc/shells /etc/ssl /lib /usr/lib
+COPY /docker/passwd /docker/group /rootfs/etc/
+COPY /docker/mime.types /rootfs/etc/nginx/mime.types
+COPY /nginx.conf /rootfs/etc/nginx/
+COPY /include/ /rootfs/etc/nginx/include/
+COPY /docker/default.conf /rootfs/etc/nginx/conf.d/
+COPY /docker/cron-acme /docker/cron-bot-blocker /docker/update-bot-blocker /docker/cron-rotate-log /docker/rotate-log /rootfs/usr/local/bin/
 
 FROM alpine:3.9
 
@@ -97,17 +95,18 @@ RUN apk add --update --no-cache \
     /usr/sbin/setcap cap_net_bind_service+ep /usr/local/bin/nginx && \
     rm -rf /tmp/nginx && \
     apk del .build-deps && \
-    mkdir -p /var/log/nginx && cd /var/log/nginx && ln -s /dev/stderr error.log && ln -s /dev/stdout access.log
+    mkdir -p /var/log/nginx && cd /var/log/nginx && ln -s /dev/stderr error.log && ln -s /dev/stdout access.log && \
+    rm -rf /usr/share/terminfo
 
 ENV LE_WORKING_DIR=/usr/local/bin \
     LE_CONFIG_HOME=/etc/ssl/acme.sh \
     PS1="🐳  \u@\h \W \\$ "
 
-RUN curl https://get.acme.sh | sh && rm -rf "$LE_WORKING_DIR/deploy" "$LE_CONFIG_HOME/account.conf" "/etc/crontabs/cron.update" && find /tmp/ -type f -delete && acme.sh --uninstallcronjob
+RUN curl https://get.acme.sh | sh && rm -rf "$LE_WORKING_DIR/deploy" "$LE_CONFIG_HOME/account.conf" "/etc/crontabs/cron.update" && find /tmp/ -type f -delete && acme.sh --uninstallcronjob && rmdir /etc/ssl/acme.sh
 
 RUN curl https://raw.githubusercontent.com/mcnilz/minicron/master/minicron > /usr/local/bin/minicron && chmod +x /usr/local/bin/minicron
 
-COPY --from=files / /
+COPY --from=files /rootfs/ /
 
 USER nginx
 
