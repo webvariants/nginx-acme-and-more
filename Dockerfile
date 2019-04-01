@@ -27,6 +27,9 @@ FROM alpine:3.9
 
 ARG NGINX_VERSION="1.15.10"
 ARG GPG_KEYS="B0F4253373F8F6F510D42178520A9993A1C052F8"
+ARG MODSECURITY_VERSION="3.0.3"
+ARG MODSECURITY_SHA256="8aa1300105d8cc23315a5e54421192bc617a66246ad004bd89e67c232208d0f4"
+ARG MODSECURITY_CRS_VERSION="3.1.0"
 
 ARG NGINX_CONFIG="\
     --sbin-path=/nginx \
@@ -54,6 +57,9 @@ RUN apk add --update --no-cache \
       pcre \
       zlib \
       libaio \
+      libxml2 \
+      libstdc++ \
+      yajl \
       bash \
       curl \
       git \
@@ -65,6 +71,7 @@ RUN apk add --update --no-cache \
       pcre-dev \
       zlib-dev \
       libaio-dev \
+      libxml2-dev \
       linux-headers \
       libcap \
       curl \
@@ -72,6 +79,8 @@ RUN apk add --update --no-cache \
     cd /tmp && \
     curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz -o nginx.tar.gz && \
     curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz.asc -o nginx.tar.gz.asc && \
+    curl -fSL https://github.com/SpiderLabs/ModSecurity/releases/download/v$MODSECURITY_VERSION/modsecurity-v$MODSECURITY_VERSION.tar.gz -o modsecurity.tar.gz && \
+    if [ "$MODSECURITY_SHA256" != "$(sha256sum modsecurity.tar.gz | awk '{print $1}')" ]; then exit 1; fi && \
     export GNUPGHOME="$(mktemp -d)" && \
     found=''; \
     for server in \
@@ -88,15 +97,43 @@ RUN apk add --update --no-cache \
     tar xzf nginx.tar.gz && \
     mv /tmp/nginx-$NGINX_VERSION /tmp/nginx && \
     rm -rf "$GNUPGHOME" nginx.tar.gz.asc nginx.tar.gz && \
+    tar xzf modsecurity.tar.gz && \
+    rm modsecurity.tar.gz && \
+    mv /tmp/modsecurity-v$MODSECURITY_VERSION /tmp/modsecurity && \
+    cd /tmp/modsecurity && \
+    export MAKEFLAGS="-j $(grep -c ^processor /proc/cpuinfo)" && \
+    ./configure --enable-standalone-module && \
+    make && \
+    make install && \
+    strip /usr/local/modsecurity/lib/libmodsecurity.so.3.0.3 && \
+    rm -rf /usr/local/modsecurity/lib/*.a /usr/local/modsecurity/lib/*.la && \
+    mkdir -p /usr/share/modsecurity && \
+    cp /tmp/modsecurity/modsecurity.conf-recommended /usr/share/modsecurity/modsecurity.conf && \
+    cp /tmp/modsecurity/unicode.mapping /usr/share/modsecurity/unicode.mapping && \
+    rm -rf /tmp/modsecurity && \
+    cd /tmp && \
+    git clone https://github.com/SpiderLabs/ModSecurity-nginx && \
+    git checkout d7101e13685efd7e7c9f808871b202656a969f4b && \
     cd /tmp/nginx && \
-    ./configure $NGINX_CONFIG && \
+    ./configure $NGINX_CONFIG --add-module=../ModSecurity-nginx && \
     make && \
     mv /tmp/nginx/objs/nginx /usr/local/bin/nginx && \
     /usr/sbin/setcap cap_net_bind_service+ep /usr/local/bin/nginx && \
-    rm -rf /tmp/nginx && \
+    rm -rf /tmp/nginx /tmp/ModSecurity-nginx && \
     apk del .build-deps && \
-    mkdir -p /var/log/nginx && cd /var/log/nginx && ln -s /dev/stderr error.log && ln -s /dev/stdout access.log && \
-    rm -rf /usr/share/terminfo
+    mkdir -p /var/log/nginx && cd /var/log/nginx && ln -s /dev/stderr error.log && ln -s /dev/stdout access.log && ln -s /dev/stderr modsec_audit.log && \
+    rm -rf /usr/share/terminfo && \
+    ldd /usr/local/modsecurity/lib/libmodsecurity.so.3 && \
+    cd /usr/local/share && \
+    curl -L https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/v$MODSECURITY_CRS_VERSION.tar.gz | tar xz && \
+    mv owasp-modsecurity-crs-$MODSECURITY_CRS_VERSION modsecurity-crs && \
+    rm -rf modsecurity-crs/util && \
+    cp /usr/share/modsecurity/unicode.mapping modsecurity-crs/ && \
+    sed -e 's#/var/log/#/var/log/nginx/#g' -e 's#SecStatusEngine On#SecStatusEngine Off#g' /usr/share/modsecurity/modsecurity.conf > modsecurity-crs/owasp-modsecurity-detect.conf && \
+    echo 'SecAction "id:900990, phase:1, nolog, pass, t:none, setvar:tx.crs_setup_version=310"' >> modsecurity-crs/owasp-modsecurity-detect.conf && \
+    echo "Include /usr/local/share/modsecurity-crs/rules/*.conf" >> modsecurity-crs/owasp-modsecurity-detect.conf && \
+    sed -e 's#SecRuleEngine DetectionOnly#SecRuleEngine On#g' modsecurity-crs/owasp-modsecurity-detect.conf > modsecurity-crs/owasp-modsecurity-on.conf && \
+    rm /usr/local/share/modsecurity-crs/rules/REQUEST-910-IP-REPUTATION.conf
 
 ENV LE_WORKING_DIR=/usr/local/bin \
     LE_CONFIG_HOME=/etc/ssl/acme.sh \

@@ -5,6 +5,8 @@
 - nginx
 - acme.sh
 - nginx-ultimate-bad-bot-blocker
+- modsecurity 3.0.3
+- modsecurity crs 3.1.0
 - (minicron)
 - (docker-signal)
 - (docker-compose)
