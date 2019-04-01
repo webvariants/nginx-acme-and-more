@@ -113,7 +113,7 @@ RUN apk add --update --no-cache \
     rm -rf /tmp/modsecurity && \
     cd /tmp && \
     git clone https://github.com/SpiderLabs/ModSecurity-nginx && \
-    git checkout d7101e13685efd7e7c9f808871b202656a969f4b && \
+    cd ModSecurity-nginx && git checkout d7101e13685efd7e7c9f808871b202656a969f4b && \
     cd /tmp/nginx && \
     ./configure $NGINX_CONFIG --add-module=../ModSecurity-nginx && \
     make && \
