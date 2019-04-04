@@ -33,7 +33,7 @@ ARG MODSECURITY_CRS_VERSION="3.1.0"
 ARG NGX_BROTLI_COMMIT="8104036af9cff4b1d34f22d00ba857e2a93a243c"
 
 ARG NGINX_CONFIG="\
-    --sbin-path=/nginx \
+    --sbin-path=/usr/local/bin/nginx \
     --conf-path=/etc/nginx/nginx.conf \
     --pid-path=/tmp/nginx.pid \
     --http-log-path=/dev/stdout \
@@ -134,10 +134,9 @@ RUN apk add --update --no-cache \
     mv owasp-modsecurity-crs-$MODSECURITY_CRS_VERSION modsecurity-crs && \
     rm -rf modsecurity-crs/util && \
     cp /usr/share/modsecurity/unicode.mapping modsecurity-crs/ && \
-    sed -e 's#/var/log/#/var/log/nginx/#g' -e 's#SecStatusEngine On#SecStatusEngine Off#g' /usr/share/modsecurity/modsecurity.conf > modsecurity-crs/owasp-modsecurity-detect.conf && \
-    echo 'SecAction "id:900990, phase:1, nolog, pass, t:none, setvar:tx.crs_setup_version=310"' >> modsecurity-crs/owasp-modsecurity-detect.conf && \
-    echo "Include /usr/local/share/modsecurity-crs/rules/*.conf" >> modsecurity-crs/owasp-modsecurity-detect.conf && \
-    sed -e 's#SecRuleEngine DetectionOnly#SecRuleEngine On#g' modsecurity-crs/owasp-modsecurity-detect.conf > modsecurity-crs/owasp-modsecurity-on.conf && \
+    sed -e 's#/var/log/#/var/log/nginx/#g' -e 's#SecStatusEngine On#SecStatusEngine Off#g' /usr/share/modsecurity/modsecurity.conf > modsecurity-crs/owasp-modsecurity.conf && \
+    echo 'SecAction "id:900990, phase:1, nolog, pass, t:none, setvar:tx.crs_setup_version=310"' >> modsecurity-crs/owasp-modsecurity.conf && \
+    echo "Include /usr/local/share/modsecurity-crs/rules/*.conf" >> modsecurity-crs/owasp-modsecurity.conf && \
     rm /usr/local/share/modsecurity-crs/rules/REQUEST-910-IP-REPUTATION.conf
 
 ENV LE_WORKING_DIR=/usr/local/bin \

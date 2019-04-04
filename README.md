@@ -43,7 +43,6 @@
 
     # start your "live app" with docker and connect to the network of this stack
     # edit conf.d/001-live.conf and change "live:80" to container name and port of you live app
-    # enable modsecurity in conf.d/001-live.conf if you want
     # look for an example app in example-app/docker-compose.yml
 
     # reload nginx config through HUP signal
