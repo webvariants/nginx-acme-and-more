@@ -49,6 +49,7 @@ ARG NGINX_CONFIG="\
     --with-stream \
     --with-stream_ssl_module \
     --with-http_stub_status_module \
+    --with-http_gzip_static_module \
     --with-threads"
 
 RUN apk add --update --no-cache \
