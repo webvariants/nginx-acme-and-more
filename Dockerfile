@@ -11,6 +11,8 @@ RUN mkdir -p /rootfs/etc/nginx && \
     mkdir -p /rootfs/etc/bot-blocker/bots.d /rootfs/etc/bot-blocker/conf.d && \
     ln -s ../bot-blocker/bots.d . && \
     ln -s ../bot-blocker/conf.d bots-conf.d && \
+    touch /rootfs/etc/nginx/bots-conf.d/botblocker-nginx-settings.conf && \
+    touch /rootfs/etc/nginx/bots-conf.d/globalblacklist.conf && \
     touch /rootfs/etc/nginx/bots.d/blockbots.conf && \
     touch /rootfs/etc/nginx/bots.d/ddos.conf
 
