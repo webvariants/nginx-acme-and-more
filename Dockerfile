@@ -4,7 +4,7 @@ COPY signal/main.go /app/main.go
 
 RUN cd /app && go get -d ./... && CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-s -w -extldflags "-static"' .
 
-FROM alpine:3.9 AS files
+FROM alpine:3.10 AS files
 
 RUN mkdir -p /rootfs/etc/nginx && \
     cd /rootfs/etc/nginx && \
@@ -25,13 +25,13 @@ COPY /include/ /rootfs/etc/nginx/include/
 COPY /docker/default.conf /rootfs/etc/nginx/conf.d/
 COPY /docker/cron-acme /docker/cron-bot-blocker /docker/update-bot-blocker /docker/cron-rotate-log /docker/rotate-log /rootfs/usr/local/bin/
 
-FROM alpine:3.9
+FROM alpine:3.10
 
-ARG NGINX_VERSION="1.15.12"
+ARG NGINX_VERSION="1.17.1"
 ARG GPG_KEYS="B0F4253373F8F6F510D42178520A9993A1C052F8"
 ARG MODSECURITY_VERSION="3.0.3"
 ARG MODSECURITY_SHA256="8aa1300105d8cc23315a5e54421192bc617a66246ad004bd89e67c232208d0f4"
-ARG MODSECURITY_CRS_VERSION="3.1.0"
+ARG MODSECURITY_CRS_VERSION="3.1.1"
 ARG NGX_BROTLI_COMMIT="8104036af9cff4b1d34f22d00ba857e2a93a243c"
 
 ARG NGINX_CONFIG="\
