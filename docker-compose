@@ -6,7 +6,7 @@ if [ "$(uname -m)" != "x86_64" ]; then
 fi
 
 DOCKER_COMPOSE_DIR="$(dirname $(realpath "${BASH_SOURCE[0]}"))"
-DOCKER_COMPOSE_VERSION="1.23.2"
+DOCKER_COMPOSE_VERSION="1.24.1"
 DOCKER_COMPOSE_ARCH="$(uname -s)-$(uname -m)"
 DOCKER_COMPOSE_URL="https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_VERSION/docker-compose-$DOCKER_COMPOSE_ARCH"
 DOCKER_COMPOSE_NAME="docker-compose-$DOCKER_COMPOSE_VERSION-$DOCKER_COMPOSE_ARCH"

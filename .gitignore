@@ -6,4 +6,5 @@
 /log/
 /html/
 /docker-compose-*
+/docker-compose.override.*
 /.env

@@ -10,4 +10,4 @@ fi
 cd "$DIR"
 
 git fetch -p
-git checkout "$(git tag -l | grep -e ^V3\. | sort -n | tail -n 1)"
+git checkout "$(git tag -l | grep -e ^V4\. | sort -n | tail -n 1)"
