@@ -27,10 +27,10 @@ COPY /docker/cron-acme /docker/cron-bot-blocker /docker/update-bot-blocker /dock
 
 FROM alpine:3.10
 
-ARG NGINX_VERSION="1.17.5"
+ARG NGINX_VERSION="1.17.8"
 ARG GPG_KEYS="B0F4253373F8F6F510D42178520A9993A1C052F8"
-ARG MODSECURITY_VERSION="3.0.3"
-ARG MODSECURITY_SHA256="8aa1300105d8cc23315a5e54421192bc617a66246ad004bd89e67c232208d0f4"
+ARG MODSECURITY_VERSION="3.0.4"
+ARG MODSECURITY_SHA256="b4231177dd80b4e076b228e57d498670113b69d445bab86db25f65346c24db22"
 ARG MODSECURITY_CRS_VERSION="3.2.0"
 ARG NGX_BROTLI_COMMIT="8104036af9cff4b1d34f22d00ba857e2a93a243c"
 
@@ -88,7 +88,7 @@ RUN apk add --update --no-cache \
     cd ngx_brotli && \
 	  git checkout -b $NGX_BROTLI_COMMIT $NGX_BROTLI_COMMIT && \
     cd .. && \
-    if [ "$MODSECURITY_SHA256" != "$(sha256sum modsecurity.tar.gz | awk '{print $1}')" ]; then exit 1; fi && \
+    if [ "$MODSECURITY_SHA256" != "$(sha256sum modsecurity.tar.gz | awk '{print $1}')" ]; then echo "modsecurity hash missmatch $(sha256sum modsecurity.tar.gz | awk '{print $1}')"; exit 1; fi && \
     export GNUPGHOME="$(mktemp -d)" && \
     found=''; \
     for server in \
@@ -101,6 +101,7 @@ RUN apk add --update --no-cache \
       gpg --keyserver "$server" --keyserver-options timeout=10 --recv-keys "$GPG_KEYS" && found=yes && break; \
     done; \
     test -z "$found" && echo >&2 "error: failed to fetch GPG key $GPG_KEYS" && exit 1; \
+    echo "verify nginx signature" && \
     gpg --batch --verify nginx.tar.gz.asc nginx.tar.gz && \
     tar xzf nginx.tar.gz && \
     mv /tmp/nginx-$NGINX_VERSION /tmp/nginx && \
@@ -110,20 +111,27 @@ RUN apk add --update --no-cache \
     mv /tmp/modsecurity-v$MODSECURITY_VERSION /tmp/modsecurity && \
     cd /tmp/modsecurity && \
     export MAKEFLAGS="-j $(grep -c ^processor /proc/cpuinfo)" && \
+    echo "configure nginx" && \
     ./configure --enable-standalone-module && \
+    echo "make nginx" && \
     make && \
+    echo "install nginx" && \
     make install && \
-    strip /usr/local/modsecurity/lib/libmodsecurity.so.3.0.3 && \
+    echo "strip modsecurity" && \
+    strip /usr/local/modsecurity/lib/libmodsecurity.so.$MODSECURITY_VERSION && \
     rm -rf /usr/local/modsecurity/lib/*.a /usr/local/modsecurity/lib/*.la && \
     mkdir -p /usr/share/modsecurity && \
     cp /tmp/modsecurity/modsecurity.conf-recommended /usr/share/modsecurity/modsecurity.conf && \
     cp /tmp/modsecurity/unicode.mapping /usr/share/modsecurity/unicode.mapping && \
     rm -rf /tmp/modsecurity && \
     cd /tmp && \
+    echo "clone modsecurity-nginx" && \
     git clone https://github.com/SpiderLabs/ModSecurity-nginx && \
     cd ModSecurity-nginx && git checkout d7101e13685efd7e7c9f808871b202656a969f4b && \
     cd /tmp/nginx && \
+    echo "configure modsecurity-nginx" && \
     ./configure $NGINX_CONFIG --add-module=../ModSecurity-nginx --add-module=../ngx_brotli && \
+    echo "make modsecurity-nginx" && \
     make && \
     mv /tmp/nginx/objs/nginx /usr/local/bin/nginx && \
     /usr/sbin/setcap cap_net_bind_service+ep /usr/local/bin/nginx && \
@@ -131,8 +139,10 @@ RUN apk add --update --no-cache \
     apk del .build-deps && \
     mkdir -p /var/log/nginx && cd /var/log/nginx && ln -s /dev/stderr error.log && ln -s /dev/stdout access.log && ln -s /dev/stderr modsec_audit.log && \
     rm -rf /usr/share/terminfo && \
+    echo "ldd modsecurity" && \
     ldd /usr/local/modsecurity/lib/libmodsecurity.so.3 && \
     cd /usr/local/share && \
+    echo "fetch crs" && \
     curl -L https://github.com/SpiderLabs/owasp-modsecurity-crs/archive/v$MODSECURITY_CRS_VERSION.tar.gz | tar xz && \
     mv owasp-modsecurity-crs-$MODSECURITY_CRS_VERSION modsecurity-crs && \
     rm -rf modsecurity-crs/util && \
